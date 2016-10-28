@@ -4,8 +4,6 @@
 #include <iostream>
 #include <string>
 
-//using namespace std;
-//using namespace cv;
 
 cv::CascadeClassifier face_cascade;
 cv::String window_name = "~ ~ ~  s p i d e r   v i s i o n  ~ ~ ~";
