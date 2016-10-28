@@ -38,8 +38,10 @@ void detectFaces(cv::Mat& frame, const cv::Mat& spider) {
 	cvtColor(frame, grayscale_frame, cv::COLOR_BGR2GRAY);
 	equalizeHist(grayscale_frame, grayscale_frame);
 
-	//cv::Mat cv::RGBA(frame.size(), CV_8UC4, frame);
-	//cv::cvtColor(frame, RGBA, CV_BGR2RGBA, 4);	
+	uchar* camData = new uchar[frame.total()*4];
+	cv::Mat frameRGBA(frame.size(), CV_8UC4, camData);
+	cv::cvtColor(frame, frameRGBA, CV_BGR2RGBA, 4);
+	std::cout<< "rgbaframe type"<< type2str(frameRGBA.type()) <<std::endl;
 
 	// void CascadeClassifier::detectMultiScale( const Mat& image, 
 	// vector<Rect>& objects, 
@@ -61,10 +63,6 @@ void detectFaces(cv::Mat& frame, const cv::Mat& spider) {
 		int spider_end_x = spider.cols;
 		int spider_end_y = spider.rows;
 
-
-
-		std::cout<< "face_x" <<face_x  <<std::endl;
-		std::cout<< "face_y"<<face_y  <<std::endl;
 		cv::Point center(face_x + faces[i].width/2, face_y + faces[i].height/2);
 
 		cv::Point spider_top_left(center.x - spider_end_x/2, center.y - spider_end_y/2); 
@@ -88,29 +86,21 @@ void detectFaces(cv::Mat& frame, const cv::Mat& spider) {
 		if (spider_top_left.y + spider_end_y - spider_y > frame.rows) {
 			spider_end_y = frame.rows - spider_top_left.y - 1;
 		}
-		std::cout<< "spider_end_x"<<spider_end_x  <<std::endl;
-		std::cout<< "spider_end_y"<<spider_end_y  <<std::endl;
-	
-		std::cout<< "spider_x -"<<spider_x  <<std::endl;
-		std::cout<< "spider_y -"<<spider_y  <<std::endl;
-		std::cout<< "spider_x -"<<spider_end_x  <<std::endl;
-		std::cout<< "spider_y -"<<spider_end_y  <<std::endl;
-		std::cout<< "sdfasdfadsfider_y -"  <<std::endl;
-		std::cout<< "spider.cols -"<<spider.cols  <<std::endl;
+		cv::Mat spider_crop =	spider( cv::Range(spider_y, spider_end_y), cv::Range(spider_x, spider_end_x) );
 
-		std::cout<< "spider_top_left ? "<< (spider_top_left.x + spider_end_x - spider_x) <<std::endl;
-		std::cout<< "frame width   " << frame.cols << std::endl;
-		std::cout<< "spider_top_x"<<spider_top_left.x  <<std::endl;
-		std::cout<< "spider_top_y"<<spider_top_left.y  <<std::endl;
-		std::cout<< "spider_wdth"<<(spider_end_x - spider_x)  <<std::endl;
-		std::cout<< "spider_with_y"<<(spider_end_y - spider_y) <<std::endl;
-		cv::Mat spider_crop =	spider(cv::Range(spider_y, spider_end_y), cv::Range(spider_x, spider_end_x));
+		cv::Mat frame_crop = frameRGBA(cv::Range(spider_top_left.y, spider_top_left.y + spider_end_y - spider_y), cv::Range(spider_top_left.x, spider_top_left.x + spider_end_x - spider_x));
 
-		spider_crop.copyTo(grayscale_frame(cv::Rect(spider_top_left.x, spider_top_left.y, spider_end_x - spider_x, spider_end_y - spider_y)));
+		cv::Mat blend_dest;
+
+		addWeighted( spider_crop, 0.5, frame_crop, 0.5, 0.0, blend_dest );
+
+		blend_dest.copyTo(frameRGBA(cv::Rect(spider_top_left.x, spider_top_left.y, spider_end_x - spider_x, spider_end_y - spider_y)));
+		
 		ellipse(frame, center, cv::Size(faces[i].width / 2, faces[i].height / 2), 0, 0, 360, cvScalar(255, 0, 255), 4, 8, 0);
 	}
-
-	cv::imshow(window_name, grayscale_frame);
+	
+	cv::imshow(window_name, frameRGBA);
+	delete[] camData;
 }
 
 
@@ -118,7 +108,7 @@ int main(void)
 {
 	cv::VideoCapture cap(0);
 	cv::Mat frame;
-	cv::Mat spider = cv::imread("spider.png", 0);
+	cv::Mat spider = cv::imread("spider.png", -1);
 		std::cout<< "frame type"<< type2str(frame.type()) <<std::endl;
 		std::cout<< "png type"<< type2str(spider.type()) <<std::endl;
   
