@@ -31,8 +31,11 @@ std::string type2str(int type) {
   return r;
 }
 
-void alphaBlend(const cv::Mat& spider, const cv::Mat& frame, cv::Mat& blend_dest) {
-	blend_dest = frame.clone();
+void alphaBlend(const cv::Mat& spider, cv::Mat& frame, cv::Mat& blend_dest) {
+	frame.copyTo(blend_dest);
+	//blend_dest(cv::Size(frame.rows,frame.cols),CV_8UC3);
+	
+	std::cout << "blend type" << type2str(blend_dest.type()) << "   frame type " << type2str(frame.type()) << " spide" << type2str(spider.type()) << std::endl;
 	std::cout << "blend cols" << blend_dest.cols << "  " << blend_dest.rows << std::endl;
 	std::cout << "spider cols" << spider.cols << "  " << spider.rows << std::endl;
 	std::cout << "frame cols" << frame.cols << "  " << frame.rows << std::endl;
@@ -53,14 +56,17 @@ void alphaBlend(const cv::Mat& spider, const cv::Mat& frame, cv::Mat& blend_dest
 
 			float result_alpha = (alpha1 / 255.0);
 	
-			uchar result_blue = blue1*result_alpha + blue2*(1-result_alpha);
-			uchar result_green = green1*result_alpha + green2*(1-result_alpha);
-			uchar result_red = red1*result_alpha + red2*(1-result_alpha);
+			//uchar result_blue = blue1*result_alpha + blue2*(1-result_alpha);
+			//uchar result_green = green1*result_alpha + green2*(1-result_alpha);
+			//uchar result_red = red1*result_alpha + red2*(1-result_alpha);
 
-			blend_dest.at<cv::Vec4b>(i, j) = cv::Vec4b(result_red, result_green, result_blue, 255); 
+			blend_dest.at<cv::Vec4b>(j, i) = cv::Vec4b(100, 5, 18, 255);
 		
+	//std::cout << "bldnd dest i j [0]s: " << (int)blend_dest.at<cv::Vec4b>(i, j).val[0] << " ! " << std::endl;
 		}
 	}
+
+	std::cout << "endfsda frame coasdfsdfls" << std::endl;
 
 }
 
@@ -123,11 +129,8 @@ void detectFaces(cv::Mat& frame, const cv::Mat& spider) {
 
 		cv::Mat frame_crop = frameRGBA(cv::Range(spider_top_left.y, spider_top_left.y + spider_end_y - spider_y), cv::Range(spider_top_left.x, spider_top_left.x + spider_end_x - spider_x));
 
-		
 		cv::Mat blend_dest;
-
 		alphaBlend(spider_crop, frame_crop, blend_dest);
-		//addWeighted( spider_crop, 0.5, frame_crop, 0.5, 0.0, blend_dest );
 
 		blend_dest.copyTo(frameRGBA(cv::Rect(spider_top_left.x, spider_top_left.y, spider_end_x - spider_x, spider_end_y - spider_y)));
 		
