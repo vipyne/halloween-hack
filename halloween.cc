@@ -5,9 +5,6 @@
 #include <string>
 
 
-using namespace cv;
-
-
 cv::CascadeClassifier face_cascade;
 cv::String window_name = "~ ~ ~  s p i d e r   v i s i o n  ~ ~ ~";
 
@@ -41,8 +38,8 @@ void detectFaces(cv::Mat& frame, const cv::Mat& spider) {
 	cvtColor(frame, grayscale_frame, cv::COLOR_BGR2GRAY);
 	equalizeHist(grayscale_frame, grayscale_frame);
 
-	cv::Mat RGBA(frame.size(), cv::CV_8UC4, frame);
-	cv::cvtColor(frame, RGBA, CV_BGR2RGBA, 4);	
+	//cv::Mat cv::RGBA(frame.size(), CV_8UC4, frame);
+	//cv::cvtColor(frame, RGBA, CV_BGR2RGBA, 4);	
 
 	// void CascadeClassifier::detectMultiScale( const Mat& image, 
 	// vector<Rect>& objects, 
@@ -109,11 +106,11 @@ void detectFaces(cv::Mat& frame, const cv::Mat& spider) {
 		std::cout<< "spider_with_y"<<(spider_end_y - spider_y) <<std::endl;
 		cv::Mat spider_crop =	spider(cv::Range(spider_y, spider_end_y), cv::Range(spider_x, spider_end_x));
 
-		spider_crop.copyTo(frame(cv::Rect(spider_top_left.x, spider_top_left.y, spider_end_x - spider_x, spider_end_y - spider_y)));
+		spider_crop.copyTo(grayscale_frame(cv::Rect(spider_top_left.x, spider_top_left.y, spider_end_x - spider_x, spider_end_y - spider_y)));
 		ellipse(frame, center, cv::Size(faces[i].width / 2, faces[i].height / 2), 0, 0, 360, cvScalar(255, 0, 255), 4, 8, 0);
 	}
 
-	cv::imshow(window_name, frame);
+	cv::imshow(window_name, grayscale_frame);
 }
 
 
@@ -121,7 +118,7 @@ int main(void)
 {
 	cv::VideoCapture cap(0);
 	cv::Mat frame;
-	cv::Mat spider = cv::imread("spider.png", -1);
+	cv::Mat spider = cv::imread("spider.png", 0);
 		std::cout<< "frame type"<< type2str(frame.type()) <<std::endl;
 		std::cout<< "png type"<< type2str(spider.type()) <<std::endl;
   
