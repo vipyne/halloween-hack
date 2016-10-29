@@ -1,0 +1,3 @@
+*.exe
+ignore/*
+.DS_Store
