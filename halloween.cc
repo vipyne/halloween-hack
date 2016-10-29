@@ -8,7 +8,14 @@
 cv::CascadeClassifier face_cascade;
 cv::String window_name = "~ ~ ~  s p i d e r   v i s i o n  ~ ~ ~";
 
-std::string type2str(int type) {
+namespace vp
+{
+	std::string type2str(int type);
+	void alphaBlend(const cv::Mat& spider, cv::Mat& frame, cv::Mat& blend_dest);
+	void detectFaces(cv::Mat& frame, const cv::Mat& spider);
+}
+
+std::string vp::type2str(int type) {
   std::string r;
 
   uchar depth = type & CV_MAT_DEPTH_MASK;
@@ -31,9 +38,8 @@ std::string type2str(int type) {
   return r;
 }
 
-void alphaBlend(const cv::Mat& spider, cv::Mat& frame, cv::Mat& blend_dest) {
-	frame.copyTo(blend_dest);
-	//blend_dest(cv::Size(frame.rows,frame.cols),CV_8UC3);
+void vp::alphaBlend(const cv::Mat& spider, cv::Mat& frame, cv::Mat& blend_dest) {
+	blend_dest = cv::Mat(frame.rows, frame.cols, CV_8UC4);
 	
 	std::cout << "blend type" << type2str(blend_dest.type()) << "   frame type " << type2str(frame.type()) << " spide" << type2str(spider.type()) << std::endl;
 	std::cout << "blend cols" << blend_dest.cols << "  " << blend_dest.rows << std::endl;
@@ -42,13 +48,13 @@ void alphaBlend(const cv::Mat& spider, cv::Mat& frame, cv::Mat& blend_dest) {
 	
 	for (int i = 0; i < frame.cols; ++i) {
 		for (int j = 0; j < frame.rows; ++j) {
-			cv::Vec4b intensity1 = spider.at<cv::Vec4b>(i, j);
+			cv::Vec4b intensity1 = spider.at<cv::Vec4b>(j, i);
 			uchar red1 = intensity1.val[0];
 			uchar green1 = intensity1.val[1];
 		  uchar blue1 = intensity1.val[2];
 			uchar alpha1 = intensity1.val[3];
 	
-			cv::Vec4b intensity2 = frame.at<cv::Vec4b>(i, j);
+			cv::Vec4b intensity2 = frame.at<cv::Vec4b>(j, i);
 			uchar red2 = intensity2.val[0];
 			uchar green2 = intensity2.val[1];
 			uchar blue2 = intensity2.val[2];
@@ -56,11 +62,11 @@ void alphaBlend(const cv::Mat& spider, cv::Mat& frame, cv::Mat& blend_dest) {
 
 			float result_alpha = (alpha1 / 255.0);
 	
-			//uchar result_blue = blue1*result_alpha + blue2*(1-result_alpha);
-			//uchar result_green = green1*result_alpha + green2*(1-result_alpha);
-			//uchar result_red = red1*result_alpha + red2*(1-result_alpha);
+			uchar result_blue = blue1*result_alpha + blue2*(1-result_alpha);
+			uchar result_green = green1*result_alpha + green2*(1-result_alpha);
+			uchar result_red = red1*result_alpha + red2*(1-result_alpha);
 
-			blend_dest.at<cv::Vec4b>(j, i) = cv::Vec4b(100, 5, 18, 255);
+			blend_dest.at<cv::Vec4b>(j, i) = cv::Vec4b(result_red, result_green, result_blue, 255);
 		
 	//std::cout << "bldnd dest i j [0]s: " << (int)blend_dest.at<cv::Vec4b>(i, j).val[0] << " ! " << std::endl;
 		}
@@ -70,9 +76,9 @@ void alphaBlend(const cv::Mat& spider, cv::Mat& frame, cv::Mat& blend_dest) {
 
 }
 
-void detectFaces(cv::Mat& frame, const cv::Mat& spider) {
+void vp::detectFaces(cv::Mat& frame, const cv::Mat& spider) {
 	std::vector<cv::Rect> faces; // c++
-	//Rect c_faces = (cv::Rect*) malloc( sizeof(cv::Rect) * ); 	
+	//Rect c_faces = (cv::Rect*) malloc( sizeof(cv::Rect) * ); // someday set this up in c too... just for kicks
 	cv::Mat grayscale_frame;
 	cvtColor(frame, grayscale_frame, cv::COLOR_BGR2GRAY);
 	equalizeHist(grayscale_frame, grayscale_frame);
@@ -125,16 +131,14 @@ void detectFaces(cv::Mat& frame, const cv::Mat& spider) {
 		if (spider_top_left.y + spider_end_y - spider_y > frame.rows) {
 			spider_end_y = frame.rows - spider_top_left.y - 1;
 		}
+
 		cv::Mat spider_crop =	spider( cv::Range(spider_y, spider_end_y), cv::Range(spider_x, spider_end_x) );
-
 		cv::Mat frame_crop = frameRGBA(cv::Range(spider_top_left.y, spider_top_left.y + spider_end_y - spider_y), cv::Range(spider_top_left.x, spider_top_left.x + spider_end_x - spider_x));
-
+		
 		cv::Mat blend_dest;
-		alphaBlend(spider_crop, frame_crop, blend_dest);
+		vp::alphaBlend(spider_crop, frame_crop, blend_dest);
 
 		blend_dest.copyTo(frameRGBA(cv::Rect(spider_top_left.x, spider_top_left.y, spider_end_x - spider_x, spider_end_y - spider_y)));
-		
-		ellipse(frame, center, cv::Size(faces[i].width / 2, faces[i].height / 2), 0, 0, 360, cvScalar(255, 0, 255), 4, 8, 0);
 	}
 	
 	cv::imshow(window_name, frameRGBA);
@@ -147,13 +151,13 @@ int main(void)
 	cv::VideoCapture cap(0);
 	cv::Mat frame;
 	cv::Mat spider = cv::imread("spider.png", -1);
-		std::cout<< "frame type"<< type2str(frame.type()) <<std::endl;
-		std::cout<< "png type"<< type2str(spider.type()) <<std::endl;
+		std::cout<< "frame type"<< vp::type2str(frame.type()) <<std::endl;
+		std::cout<< "png type"<< vp::type2str(spider.type()) <<std::endl;
   
 	face_cascade.load("haarcascade_frontalface_alt.xml");
 	
 	while(cap.read(frame)) {
-		detectFaces(frame, spider);
+		vp::detectFaces(frame, spider);
 
 		// Pause
 		if( cv::waitKey(30) >= 0)
