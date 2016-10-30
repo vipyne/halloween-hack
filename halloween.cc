@@ -1,3 +1,17 @@
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+// a silly halloween hack at Recurse Center -- october 2016
+// uses OpenCV face detection
+//
+// compile : $ g++ halloween.cc -o holla.exe `pkg-config --cflags --libs opencv` 
+// usage   : $ ./holla.exe 
+// example : $ ./holla.exe
+//           ==> a window opens and streams from camera... plus fun stuff 
+//
+// authors: @vipyne and @alinen
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 #include <opencv2/objdetect/objdetect.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -15,6 +29,7 @@ namespace vp
 	void detectFaces(cv::Mat& frame, const cv::Mat& spider);
 }
 
+// http://stackoverflow.com/a/17820615/3191800
 std::string vp::type2str(int type) {
   std::string r;
 
@@ -41,11 +56,6 @@ std::string vp::type2str(int type) {
 void vp::alphaBlend(const cv::Mat& spider, cv::Mat& frame, cv::Mat& blend_dest) {
 	blend_dest = cv::Mat(frame.rows, frame.cols, CV_8UC4);
 	
-	std::cout << "blend type" << type2str(blend_dest.type()) << "   frame type " << type2str(frame.type()) << " spide" << type2str(spider.type()) << std::endl;
-	std::cout << "blend cols" << blend_dest.cols << "  " << blend_dest.rows << std::endl;
-	std::cout << "spider cols" << spider.cols << "  " << spider.rows << std::endl;
-	std::cout << "frame cols" << frame.cols << "  " << frame.rows << std::endl;
-	
 	for (int i = 0; i < frame.cols; ++i) {
 		for (int j = 0; j < frame.rows; ++j) {
 			cv::Vec4b intensity1 = spider.at<cv::Vec4b>(j, i);
@@ -67,26 +77,21 @@ void vp::alphaBlend(const cv::Mat& spider, cv::Mat& frame, cv::Mat& blend_dest) 
 			uchar result_red = red1*result_alpha + red2*(1-result_alpha);
 
 			blend_dest.at<cv::Vec4b>(j, i) = cv::Vec4b(result_red, result_green, result_blue, 255);
-		
-	//std::cout << "bldnd dest i j [0]s: " << (int)blend_dest.at<cv::Vec4b>(i, j).val[0] << " ! " << std::endl;
 		}
 	}
-
-	std::cout << "endfsda frame coasdfsdfls" << std::endl;
-
 }
 
-void vp::detectFaces(cv::Mat& frame, const cv::Mat& spider) {
+void vp::detectFaces(cv::Mat& frame, const cv::Mat& input_spider) {
 	std::vector<cv::Rect> faces; // c++
 	//Rect c_faces = (cv::Rect*) malloc( sizeof(cv::Rect) * ); // someday set this up in c too... just for kicks
 	cv::Mat grayscale_frame;
 	cvtColor(frame, grayscale_frame, cv::COLOR_BGR2GRAY);
 	equalizeHist(grayscale_frame, grayscale_frame);
 
+	// add alpha channel to camera frames
 	uchar* camData = new uchar[frame.total()*4];
 	cv::Mat frameRGBA(frame.size(), CV_8UC4, camData);
-	cv::cvtColor(frame, frameRGBA, CV_BGR2RGBA, 4);
-	std::cout<< "rgbaframe type"<< type2str(frameRGBA.type()) <<std::endl;
+	cv::cvtColor(frame, frameRGBA, CV_RGB2RGBA, 4);
 
 	// void CascadeClassifier::detectMultiScale( const Mat& image, 
 	// vector<Rect>& objects, 
@@ -103,12 +108,15 @@ void vp::detectFaces(cv::Mat& frame, const cv::Mat& spider) {
 		 cv::Size(30, 30)); 
 
 	for(size_t i = 0; i < faces.size(); ++i) {
-		int face_x = faces[i].x;
-		int face_y = faces[i].y;
+		cv::Mat spider; 
+		//	void resize(InputArray src, OutputArray dst, Size dsize, double fx=0, double fy=0, int interpolation=INTER_LINEAR )
+		cv::resize(input_spider, spider, cv::Size(faces[i].width/3, faces[i].height/3), 0, 0);
+
+		// place spider on forehead above left eye	
+		cv::Point center(faces[i].x + faces[i].width/1.5, faces[i].y + faces[i].height/6);
+		
 		int spider_end_x = spider.cols;
 		int spider_end_y = spider.rows;
-
-		cv::Point center(face_x + faces[i].width/2, face_y + faces[i].height/2);
 
 		cv::Point spider_top_left(center.x - spider_end_x/2, center.y - spider_end_y/2); 
 
@@ -119,7 +127,6 @@ void vp::detectFaces(cv::Mat& frame, const cv::Mat& spider) {
 			spider_x = abs(spider_top_left.x);
 			spider_top_left.x = 0;
 		}
-
 		if (spider_top_left.y < 0) {
 			spider_y = abs(spider_top_left.y);
 			spider_top_left.y = 0;
@@ -150,19 +157,25 @@ int main(void)
 {
 	cv::VideoCapture cap(0);
 	cv::Mat frame;
-	cv::Mat spider = cv::imread("spider.png", -1);
-		std::cout<< "frame type"<< vp::type2str(frame.type()) <<std::endl;
-		std::cout<< "png type"<< vp::type2str(spider.type()) <<std::endl;
+	cv::Mat input_spider = cv::imread("spider.png", -1);
   
 	face_cascade.load("haarcascade_frontalface_alt.xml");
 	
+	std::cout << "" << std::endl;
+	std::cout << "   it looks like there is something above your eye... look in the camera to see" << std::endl;
+	std::cout << "" << std::endl;
+
 	while(cap.read(frame)) {
-		vp::detectFaces(frame, spider);
+		vp::detectFaces(frame, input_spider);
 
 		// Pause
-		if( cv::waitKey(30) >= 0)
+		if( cv::waitKey(30) >= 0)	
 			break;
+
 	}
+	std::cout << "   happy halloween!" << std::endl;
+	std::cout << "" << std::endl;
+
 	return 0;
 }
 
