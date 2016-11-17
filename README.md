@@ -5,4 +5,6 @@
 $ g++ halloween.cc -o holla.exe `pkg-config --cflags --libs opencv`
 $ ./holla.exe
 ```
+![new alt](https://github.com/vipyne/halloween-hack/blob/master/wip_screenshots/graphics_club.png)
 
+![new alt](https://github.com/vipyne/halloween-hack/blob/master/wip_screenshots/best-spider-vision.png)
