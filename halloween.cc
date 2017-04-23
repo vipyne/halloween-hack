@@ -169,7 +169,7 @@ int main(void)
 		vp::detectFaces(frame, input_spider);
 
 		// Pause
-		if( cv::waitKey(30) >= 0)	
+		if( cv::waitKey(30) == 'q')	
 			break;
 
 	}
